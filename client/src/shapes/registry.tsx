@@ -136,7 +136,7 @@ function textHeight(text: string, width: number, size: number, bold = false, mon
 
 // ------------------------------------------------------- compartiments UML
 
-const UML_PAD = 8;
+const UML_PAD = 12;
 
 export interface UmlRow {
   y: number;
@@ -248,7 +248,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   ellipse: {
     name: 'Ellipse',
-    size: [160, 96],
+    size: [160, 80],
     outline: 'ellipse',
     Body: ({ w, h, s }) => <ellipse cx={w / 2} cy={h / 2} rx={w / 2} ry={h / 2} {...skin(s)} />,
     textRect: ({ w, h }) => inset({ x: 0, y: 0, w, h }, Math.min(w, h) * 0.16),
@@ -263,7 +263,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   diamond: {
     name: 'Décision',
-    size: [150, 100],
+    size: [160, 100],
     outline: 'diamond',
     Body: ({ w, h, s }) => (
       <polygon points={poly([[w / 2, 0], [w, h / 2], [w / 2, h], [0, h / 2]])} {...skin(s)} />
@@ -272,14 +272,14 @@ export const shapes: Record<string, ShapeDef> = {
   },
   triangle: {
     name: 'Triangle',
-    size: [130, 110],
+    size: [140, 100],
     outline: 'diamond',
     Body: ({ w, h, s }) => <polygon points={poly([[w / 2, 0], [w, h], [0, h]])} {...skin(s)} />,
     textRect: ({ w, h }) => ({ x: w * 0.18, y: h * 0.42, w: w * 0.64, h: h * 0.5 }),
   },
   parallelogram: {
     name: 'Données',
-    size: [170, 80],
+    size: [160, 80],
     outline: 'rect',
     Body: ({ w, h, s }) => {
       const k = Math.min(w * 0.2, 28);
@@ -289,7 +289,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   hexagon: {
     name: 'Hexagone',
-    size: [170, 84],
+    size: [160, 80],
     outline: 'rect',
     Body: ({ w, h, s }) => {
       const k = Math.min(w * 0.18, 26);
@@ -303,14 +303,14 @@ export const shapes: Record<string, ShapeDef> = {
   },
   stadium: {
     name: 'Début / Fin',
-    size: [150, 62],
+    size: [160, 60],
     outline: 'rect',
     style: { fill: '#e0f2fe', stroke: '#0284c7' },
     Body: ({ w, h, s }) => <rect x={0} y={0} width={w} height={h} rx={h / 2} {...skin(s)} />,
   },
   cylinder: {
     name: 'Base de données',
-    size: [130, 110],
+    size: [120, 100],
     outline: 'rect',
     Body: ({ w, h, s }) => {
       const ry = Math.min(h * 0.16, 20);
@@ -328,7 +328,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   document: {
     name: 'Document',
-    size: [160, 96],
+    size: [160, 90],
     outline: 'rect',
     Body: ({ w, h, s }) => {
       const wave = h * 0.16;
@@ -343,7 +343,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   predefined: {
     name: 'Sous-programme',
-    size: [170, 80],
+    size: [160, 80],
     outline: 'rect',
     Body: ({ w, h, s }) => {
       const k = Math.min(w * 0.1, 14);
@@ -375,7 +375,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   sticky: {
     name: 'Pense-bête',
-    size: [130, 120],
+    size: [120, 120],
     outline: 'rect',
     style: { fill: '#fef08a', stroke: '#eab308', radius: 2, align: 'left', valign: 'top' },
     Body: ({ w, h, s }) => <rect x={0} y={0} width={w} height={h} rx={2} {...skin(s)} />,
@@ -392,7 +392,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   startNode: {
     name: 'Nœud initial',
-    size: [46, 46],
+    size: [30, 30],
     outline: 'ellipse',
     keepRatio: true,
     style: { fill: '#0f172a', stroke: '#0f172a' },
@@ -402,7 +402,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   endNode: {
     name: 'Nœud final',
-    size: [46, 46],
+    size: [30, 30],
     outline: 'ellipse',
     keepRatio: true,
     style: { fill: '#ffffff', stroke: '#0f172a' },
@@ -410,23 +410,30 @@ export const shapes: Record<string, ShapeDef> = {
     Body: ({ w, h, s }) => (
       <g>
         <ellipse cx={w / 2} cy={h / 2} rx={w / 2} ry={h / 2} {...skin(s)} />
-        <ellipse cx={w / 2} cy={h / 2} rx={w / 2 - 6} ry={h / 2 - 6} fill={s.stroke} />
+        <ellipse
+          cx={w / 2}
+          cy={h / 2}
+          rx={Math.max(w / 2 - Math.max(w * 0.17, 3), 1)}
+          ry={Math.max(h / 2 - Math.max(h * 0.17, 3), 1)}
+          fill={s.stroke}
+        />
       </g>
     ),
     textRect: ({ w, h }) => ({ x: -40, y: h + 4, w: w + 80, h: 20 }),
   },
   bar: {
     name: 'Bifurcation / Jonction',
-    size: [180, 10],
+    size: [160, 6],
     outline: 'rect',
-    style: { fill: '#0f172a', stroke: '#0f172a', radius: 2 },
+    // Trait plein : un contour viendrait s'ajouter à l'épaisseur voulue.
+    style: { fill: '#0f172a', stroke: '#0f172a', strokeWidth: 0, radius: 2 },
     text: '',
     Body: ({ w, h, s }) => <rect x={0} y={0} width={w} height={h} rx={2} {...skin(s)} />,
     textRect: ({ w, h }) => ({ x: 0, y: h + 4, w, h: 20 }),
   },
   umlClass: {
     name: 'Classe',
-    size: [220, 140],
+    size: [200, 120],
     outline: 'rect',
     style: { radius: 4, align: 'left' },
     text: 'NomDeClasse',
@@ -437,7 +444,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   umlInterface: {
     name: 'Interface',
-    size: [220, 130],
+    size: [200, 120],
     outline: 'rect',
     style: { radius: 4 },
     text: 'NomInterface',
@@ -448,7 +455,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   umlEnum: {
     name: 'Énumération',
-    size: [200, 130],
+    size: [180, 120],
     outline: 'rect',
     style: { radius: 4 },
     text: 'NomEnum',
@@ -459,7 +466,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   umlPackage: {
     name: 'Paquetage',
-    size: [260, 180],
+    size: [240, 160],
     outline: 'rect',
     container: true,
     style: { fill: '#f8fafc', align: 'left', valign: 'top' },
@@ -478,7 +485,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   umlComponent: {
     name: 'Composant',
-    size: [190, 90],
+    size: [180, 80],
     outline: 'rect',
     Body: ({ w, h, s }) => (
       <g>
@@ -491,7 +498,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   lifeline: {
     name: 'Ligne de vie',
-    size: [150, 320],
+    size: [140, 300],
     outline: 'rect',
     precise: true,
     // Les messages touchent le trait de vie, au centre de la boîte d'en-tête.
@@ -528,7 +535,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   fragment: {
     name: 'Fragment (alt/loop)',
-    size: [340, 200],
+    size: [320, 200],
     outline: 'rect',
     container: true,
     style: { fill: 'none', stroke: '#64748b', align: 'left', valign: 'top' },
@@ -547,7 +554,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   actor: {
     name: 'Acteur',
-    size: [64, 110],
+    size: [50, 90],
     outline: 'rect',
     keepRatio: true,
     style: { fill: 'none', stroke: '#0f172a' },
@@ -572,7 +579,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   useCase: {
     name: "Cas d'utilisation",
-    size: [180, 84],
+    size: [150, 70],
     outline: 'ellipse',
     style: { fill: '#f0fdf4', stroke: '#16a34a' },
     text: "Cas d'utilisation",
@@ -596,7 +603,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   mindRoot: {
     name: 'Idée centrale',
-    size: [190, 74],
+    size: [180, 70],
     outline: 'rect',
     style: { fill: '#f97316', stroke: '#ea580c', color: '#ffffff', fontSize: 17, bold: true, radius: 999 },
     text: 'Idée centrale',
@@ -604,7 +611,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   mindTopic: {
     name: 'Branche',
-    size: [160, 56],
+    size: [160, 60],
     outline: 'rect',
     style: { fill: '#ffedd5', stroke: '#fb923c', color: '#7c2d12', radius: 14 },
     text: 'Branche',
@@ -612,7 +619,7 @@ export const shapes: Record<string, ShapeDef> = {
   },
   mindSubtopic: {
     name: 'Sous-branche',
-    size: [140, 38],
+    size: [140, 40],
     outline: 'rect',
     style: { fill: 'none', stroke: '#fb923c', strokeWidth: 2, color: '#0f172a', radius: 0 },
     text: 'Sous-branche',

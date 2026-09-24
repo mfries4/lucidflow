@@ -1,6 +1,6 @@
 import type { Anchor, Diagram, DiagramEdge, DiagramNode, DocumentKind, EdgeStyle, NodeStyle } from '../types';
 import { DEFAULT_EDGE_STYLE } from '../types';
-import { shapeDef, styleFor } from '../shapes/registry';
+import { minHeightFor, shapeDef, styleFor } from '../shapes/registry';
 import { uid } from './id';
 
 interface NodeOpts {
@@ -14,7 +14,7 @@ interface NodeOpts {
 
 export function makeNode(shape: string, x: number, y: number, opts: NodeOpts = {}): DiagramNode {
   const def = shapeDef(shape);
-  return {
+  const node: DiagramNode = {
     id: opts.id ?? uid('n'),
     shape,
     x,
@@ -26,6 +26,12 @@ export function makeNode(shape: string, x: number, y: number, opts: NodeOpts = {
     style: styleFor(shape, opts.style),
     container: def.container,
   };
+  // Une forme à compartiments (classe, interface, énumération) épouse son contenu
+  // plutôt que de laisser un compartiment vide s'étirer jusqu'en bas.
+  if (def.autoHeight && opts.h === undefined) {
+    node.h = Math.max(Math.ceil(minHeightFor(node)), 60);
+  }
+  return node;
 }
 
 interface EdgeOpts {
@@ -62,7 +68,7 @@ export interface TemplateDef {
 }
 
 const mindmap = (): Diagram => {
-  const root = makeNode('mindRoot', 430, 300, { text: 'Sujet principal' });
+  const root = makeNode('mindRoot', 420, 290, { text: 'Sujet principal' });
   const branches = [
     { text: 'Objectifs', x: 120, y: 170 },
     { text: 'Contraintes', x: 120, y: 420 },
@@ -86,12 +92,13 @@ const mindmap = (): Diagram => {
 };
 
 const flowchart = (): Diagram => {
-  const start = makeNode('stadium', 380, 80, { text: 'Début' });
-  const step = makeNode('roundRect', 370, 200, { text: 'Saisir la demande' });
-  const test = makeNode('diamond', 375, 340, { text: 'Demande valide ?' });
-  const ok = makeNode('roundRect', 620, 500, { text: 'Enregistrer' });
-  const ko = makeNode('roundRect', 120, 500, { text: 'Afficher l’erreur' });
-  const end = makeNode('stadium', 380, 650, { text: 'Fin' });
+  // Tout est centré sur un axe unique (x = 450), les deux branches en miroir.
+  const start = makeNode('stadium', 370, 80, { text: 'Début' });
+  const step = makeNode('roundRect', 370, 190, { text: 'Saisir la demande' });
+  const test = makeNode('diamond', 370, 330, { text: 'Demande valide ?' });
+  const ok = makeNode('roundRect', 610, 490, { text: 'Enregistrer' });
+  const ko = makeNode('roundRect', 130, 490, { text: 'Afficher l’erreur' });
+  const end = makeNode('stadium', 370, 640, { text: 'Fin' });
   return {
     nodes: [start, step, test, ok, ko, end],
     edges: [
@@ -106,30 +113,25 @@ const flowchart = (): Diagram => {
 };
 
 const umlClass = (): Diagram => {
-  const base = makeNode('umlClass', 380, 80, {
+  const base = makeNode('umlClass', 375, 80, {
     text: 'Personne',
     compartments: ['- nom : String\n- age : int', '+ sePresenter() : void'],
-    h: 150,
   });
   const child = makeNode('umlClass', 130, 330, {
     text: 'Etudiant',
     compartments: ['- numero : String', '+ sInscrire(c : Cours) : void'],
-    h: 140,
   });
   const other = makeNode('umlClass', 620, 330, {
     text: 'Enseignant',
     compartments: ['- matiere : String', '+ noter(e : Etudiant) : void'],
-    h: 140,
   });
   const iface = makeNode('umlInterface', 620, 80, {
     text: 'Identifiable',
     compartments: ['+ identifiant() : String'],
-    h: 110,
   });
   const course = makeNode('umlClass', 130, 560, {
     text: 'Cours',
     compartments: ['- intitule : String', '+ ajouter(e : Etudiant) : void'],
-    h: 130,
   });
   return {
     nodes: [base, child, other, iface, course],
@@ -154,38 +156,46 @@ const umlSequence = (): Diagram => {
     makeNode('lifeline', 680, 90, { text: ':Service' }),
   ];
   // Barres d'activation centrées sur leur ligne de vie.
-  const bars = [makeNode('activation', 467, 170, { h: 200 }), makeNode('activation', 747, 220, { h: 100 })];
+  const bars = [makeNode('activation', 462, 170, { h: 200 }), makeNode('activation', 742, 220, { h: 100 })];
+
+  // Un message est posé à une hauteur absolue, convertie en fraction de la forme :
+  // les flèches restent horizontales même si les tailles par défaut changent.
+  const at = (node: DiagramNode, y: number) => (y - node.y) / node.h;
   const call: Partial<EdgeStyle> = { routing: 'straight', end: 'triangle' };
   const reply: Partial<EdgeStyle> = { routing: 'straight', end: 'arrow-thin', dash: 'dashed' };
 
-  // Chaque message occupe sa propre hauteur : c'est la lecture chronologique.
   return {
     nodes: [...lifelines, ...bars],
     edges: [
       makeEdge(lifelines[0].id, bars[0].id, {
-        label: 'soumettre()', style: call, fromAnchor: 'e', fromT: 0.31, toAnchor: 'w', toT: 0.1,
+        label: 'soumettre()', style: call,
+        fromAnchor: 'e', fromT: at(lifelines[0], 190), toAnchor: 'w', toT: at(bars[0], 190),
       }),
       makeEdge(bars[0].id, bars[1].id, {
-        label: 'valider(données)', style: call, fromAnchor: 'e', fromT: 0.35, toAnchor: 'w', toT: 0.2,
+        label: 'valider(données)', style: call,
+        fromAnchor: 'e', fromT: at(bars[0], 240), toAnchor: 'w', toT: at(bars[1], 240),
       }),
       makeEdge(bars[1].id, bars[0].id, {
-        label: 'résultat', style: reply, fromAnchor: 'w', fromT: 0.8, toAnchor: 'e', toT: 0.65,
+        label: 'résultat', style: reply,
+        fromAnchor: 'w', fromT: at(bars[1], 300), toAnchor: 'e', toT: at(bars[0], 300),
       }),
       makeEdge(bars[0].id, lifelines[0].id, {
-        label: 'confirmation', style: reply, fromAnchor: 'w', fromT: 0.9, toAnchor: 'e', toT: 0.81,
+        label: 'confirmation', style: reply,
+        fromAnchor: 'w', fromT: at(bars[0], 350), toAnchor: 'e', toT: at(lifelines[0], 350),
       }),
     ],
   };
 };
 
 const umlUseCase = (): Diagram => {
-  const frame = makeNode('boundary', 260, 70, { text: 'Plateforme de réservation', w: 620, h: 460 });
-  const actor = makeNode('actor', 120, 210, { text: 'Client' });
-  const admin = makeNode('actor', 950, 300, { text: 'Administrateur' });
-  const search = makeNode('useCase', 330, 130, { text: 'Rechercher un trajet', w: 210 });
-  const book = makeNode('useCase', 330, 250, { text: 'Réserver un billet', w: 210 });
-  const manage = makeNode('useCase', 330, 380, { text: 'Gérer les offres', w: 210 });
-  const pay = makeNode('useCase', 610, 250, { text: 'Payer en ligne', w: 210 });
+  const frame = makeNode('boundary', 260, 70, { text: 'Plateforme de réservation', w: 620, h: 410 });
+  // Les acteurs sont alignés sur le cas d'utilisation qu'ils déclenchent.
+  const actor = makeNode('actor', 120, 180, { text: 'Client' });
+  const admin = makeNode('actor', 950, 370, { text: 'Administrateur' });
+  const search = makeNode('useCase', 330, 130, { text: 'Rechercher un trajet', w: 200 });
+  const book = makeNode('useCase', 330, 250, { text: 'Réserver un billet', w: 200 });
+  const manage = makeNode('useCase', 330, 380, { text: 'Gérer les offres', w: 200 });
+  const pay = makeNode('useCase', 610, 250, { text: 'Payer en ligne', w: 200 });
   const line: Partial<EdgeStyle> = { end: 'none', routing: 'straight' };
   return {
     nodes: [frame, actor, admin, search, book, manage, pay],
@@ -202,26 +212,30 @@ const umlUseCase = (): Diagram => {
 };
 
 const umlActivity = (): Diagram => {
-  const start = makeNode('startNode', 400, 60);
-  const action = makeNode('roundRect', 330, 150, {
-    text: 'Recevoir la commande',
-    style: { fill: '#eff6ff', stroke: '#2563eb', radius: 14 },
-  });
-  const test = makeNode('diamond', 348, 290, { text: 'En stock ?' });
-  const fork = makeNode('bar', 220, 430, { w: 400 });
-  const prep = makeNode('roundRect', 150, 490, { text: 'Préparer le colis', style: { fill: '#eff6ff', stroke: '#2563eb', radius: 14 } });
-  const invoice = makeNode('roundRect', 420, 490, { text: 'Éditer la facture', style: { fill: '#eff6ff', stroke: '#2563eb', radius: 14 } });
-  const join = makeNode('bar', 220, 620, { w: 400 });
-  const restock = makeNode('roundRect', 660, 290, { text: 'Réapprovisionner', style: { fill: '#fef2f2', stroke: '#dc2626', radius: 14 } });
-  const end = makeNode('endNode', 400, 700);
+  const action = (x: number, y: number, text: string, accent = '#2563eb', fill = '#eff6ff') =>
+    makeNode('roundRect', x, y, { text, style: { fill, stroke: accent, radius: 14 } });
+
+  // Axe unique à x = 410. Les nœuds de contrôle (initial, décision, bifurcation,
+  // final) restent petits : en UML ils marquent le flux, ils ne le portent pas —
+  // les conditions se lisent sur les flèches.
+  const start = makeNode('startNode', 395, 60);
+  const check = action(330, 130, 'Vérifier le stock');
+  const test = makeNode('diamond', 380, 260, { text: '', w: 60, h: 60 });
+  const restock = action(640, 250, 'Réapprovisionner', '#dc2626', '#fef2f2');
+  const fork = makeNode('bar', 230, 400, { w: 360 });
+  const prep = action(230, 450, 'Préparer le colis');
+  const invoice = action(430, 450, 'Éditer la facture');
+  const join = makeNode('bar', 230, 580, { w: 360 });
+  const end = makeNode('endNode', 395, 650);
+
   return {
-    nodes: [start, action, test, fork, prep, invoice, join, restock, end],
+    nodes: [start, check, test, restock, fork, prep, invoice, join, end],
     edges: [
-      makeEdge(start.id, action.id),
-      makeEdge(action.id, test.id),
-      makeEdge(test.id, fork.id, { label: 'oui' }),
-      makeEdge(test.id, restock.id, { label: 'non' }),
-      makeEdge(restock.id, action.id),
+      makeEdge(start.id, check.id),
+      makeEdge(check.id, test.id),
+      makeEdge(test.id, fork.id, { label: '[en stock]' }),
+      makeEdge(test.id, restock.id, { label: '[rupture]' }),
+      makeEdge(restock.id, check.id),
       makeEdge(fork.id, prep.id),
       makeEdge(fork.id, invoice.id),
       makeEdge(prep.id, join.id),

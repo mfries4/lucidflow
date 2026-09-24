@@ -44,7 +44,7 @@ export const PALETTE: PaletteGroup[] = [
       { shape: 'predefined', label: 'Sous-programme', text: 'Sous-programme' },
       { shape: 'document', text: 'Document' },
       { shape: 'cylinder', label: 'Stockage', text: 'Données' },
-      { shape: 'circle', label: 'Connecteur', text: 'A', size: [52, 52] },
+      { shape: 'circle', label: 'Connecteur', text: 'A', size: [50, 50] },
     ],
   },
   {
@@ -99,9 +99,9 @@ export const PALETTE: PaletteGroup[] = [
     items: [
       { shape: 'startNode', label: 'Nœud initial' },
       { shape: 'roundRect', label: 'Action', text: 'Action', style: { fill: '#eff6ff', stroke: '#2563eb', radius: 14 } },
-      { shape: 'diamond', label: 'Décision / Fusion', text: '' },
+      { shape: 'diamond', label: 'Décision / Fusion', text: '', size: [60, 60] },
       { shape: 'bar', label: 'Bifurcation', text: '' },
-      { shape: 'bar', label: 'Jonction (vertical)', text: '', size: [10, 150] },
+      { shape: 'bar', label: 'Jonction (vertical)', text: '', size: [6, 140] },
       { shape: 'endNode', label: 'Nœud final' },
       { shape: 'parallelogram', label: 'Objet', text: 'Objet' },
     ],

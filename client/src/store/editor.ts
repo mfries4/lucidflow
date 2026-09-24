@@ -272,7 +272,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
     const def = shapeDef(item.shape);
     const [w, h] = item.size ?? def.size;
     const id = uid('n');
-    const node: DiagramNode = {
+    let node: DiagramNode = {
       id,
       shape: item.shape,
       x: snapValue(options.centered === false ? at.x : at.x - w / 2, get().snap),
@@ -284,6 +284,10 @@ export const useEditor = create<EditorState>()((set, get) => ({
       style: styleFor(item.shape, item.style),
       container: def.container,
     };
+    // Une classe UML posée épouse la hauteur de ses compartiments.
+    if (def.autoHeight && !item.size) {
+      node = { ...node, h: Math.max(Math.ceil(minHeightFor(node)), 60) };
+    }
     get().history();
     set((s) => ({
       // Les conteneurs restent au fond pour ne pas masquer leur contenu.
