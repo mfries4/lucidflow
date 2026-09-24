@@ -27,6 +27,9 @@ ils survivent aux redémarrages et aux reconstructions de l'image. Pour changer 
 - Tableau de bord listant tous les schémas, avec aperçu, recherche (insensible aux accents),
   renommage, duplication et suppression.
 - Six modèles de départ : carte mentale, organigramme, UML classes / séquence / cas d'utilisation / activité, plus le document vierge.
+- **Import PlantUML** : collez un texte et l'application en tire un schéma modifiable —
+  diagrammes de classes, de séquence, de cas d'utilisation et cartes mentales. Depuis le tableau
+  de bord pour créer un document, ou depuis l'éditeur pour insérer dans le schéma courant.
 - Enregistrement automatique (après 900 ms d'inactivité), à la sortie de l'éditeur et à la fermeture
   de l'onglet ; bouton d'enregistrement explicite et `Ctrl+S`. Un aperçu du schéma est généré pour
   le tableau de bord. Si le serveur est indisponible, le travail reste à l'écran et repart au
@@ -128,6 +131,23 @@ Choix techniques :
 
 Un schéma est un objet JSON `{ nodes: [...], edges: [...] }` : les fichiers exportés en JSON peuvent
 donc être relus ou produits par un autre outil.
+
+## Import PlantUML
+
+Le texte est analysé dans le navigateur, sans appel réseau. Sont reconnus :
+
+| Type | Syntaxe reprise |
+|---|---|
+| Classes | `class` / `abstract` / `interface` / `enum`, membres entre accolades, `extends` et `implements`, `package`, relations `<\|--` `..\|>` `*--` `o--` `-->` `..>` avec cardinalités et étiquettes |
+| Séquence | `participant` / `actor` / `database`…, messages `->` et `-->`, `activate` / `deactivate`, raccourcis `++` et `--`, messages réflexifs, fragments `alt` / `loop` / `opt` / `par` |
+| Cas d'utilisation | `actor`, `usecase`, formes courtes `:Acteur:` et `(Cas)`, `rectangle`/`package` comme frontière, relations avec `<<include>>` et `<<extend>>` |
+| Carte mentale | `@startmindmap`, niveaux `*`, `+`, `-`, directives `left side` et `right side` |
+
+Deux limites à connaître : **la mise en page est recalculée par l'application** — PlantUML confie
+la sienne à Graphviz, dont nous ne disposons pas ; les positions sont donc lisibles mais
+différentes des siennes. Et les **notes** ainsi que les diagrammes d'**activité**, d'**état** et de
+**composants** ne sont pas repris : la fenêtre d'import le signale ligne par ligne au lieu
+d'échouer en silence.
 
 ## Limites connues
 

@@ -4,6 +4,7 @@ import { ShapePanel } from '../components/ShapePanel';
 import { PropertiesPanel } from '../components/PropertiesPanel';
 import { Toolbar } from '../components/Toolbar';
 import { ContextMenu } from '../components/ContextMenu';
+import { PlantUmlDialog } from '../components/PlantUmlDialog';
 import { useEditor } from '../store/editor';
 import { api } from '../lib/api';
 import {
@@ -16,7 +17,7 @@ import {
 } from '../lib/export';
 import { boundsOf, rectOf } from '../lib/geometry';
 import { templateFor } from '../lib/templates';
-import type { Point } from '../types';
+import type { Diagram, Point } from '../types';
 
 const AUTOSAVE_DELAY = 900;
 const THUMBNAIL_INTERVAL = 20_000;
@@ -35,6 +36,7 @@ export function EditorPage({ docId, onBack }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ at: Point; worldAt: Point } | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const status = useEditor((s) => s.status);
   const revision = useEditor((s) => s.revision);
@@ -173,6 +175,24 @@ export function EditorPage({ docId, onBack }: Props) {
     [exportSvgElement],
   );
 
+  /** Le schéma importé se pose à droite de ce qui existe déjà. */
+  const insertImported = useCallback((result: { diagram: Diagram }) => {
+    const state = useEditor.getState();
+    const existing = boundsOf(state.nodes.map(rectOf));
+    const incoming = boundsOf(result.diagram.nodes.map(rectOf));
+    const dx = existing && incoming ? existing.x + existing.w + 140 - incoming.x : 0;
+    const dy = existing && incoming ? existing.y - incoming.y : 0;
+    state.insertNodes(
+      result.diagram.nodes.map((n) => ({ ...n, x: n.x + dx, y: n.y + dy })),
+      result.diagram.edges,
+    );
+    setImporting(false);
+    requestAnimationFrame(() => {
+      const viewport = canvasRef.current?.viewport();
+      if (viewport?.w) useEditor.getState().fitToContent(viewport);
+    });
+  }, []);
+
   const fit = useCallback(() => {
     const viewport = canvasRef.current?.viewport();
     if (viewport?.w) useEditor.getState().fitToContent(viewport);
@@ -300,6 +320,7 @@ export function EditorPage({ docId, onBack }: Props) {
     <div className="editor">
       <Toolbar
         onBack={onBack}
+        onImport={() => setImporting(true)}
         onCopyImage={copyImage}
         onExport={handleExport}
         onFit={fit}
@@ -313,6 +334,14 @@ export function EditorPage({ docId, onBack }: Props) {
         <PropertiesPanel />
       </div>
       {menu && <ContextMenu at={menu.at} worldAt={menu.worldAt} onClose={() => setMenu(null)} />}
+      {importing && (
+        <PlantUmlDialog
+          title="Insérer depuis du texte PlantUML"
+          actionLabel="Insérer dans le schéma"
+          onClose={() => setImporting(false)}
+          onImport={insertImported}
+        />
+      )}
       {loading && <div className="loading-veil">Chargement du schéma…</div>}
     </div>
   );

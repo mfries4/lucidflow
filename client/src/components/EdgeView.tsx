@@ -62,14 +62,6 @@ function EdgeViewBase({ edge, geo, selected, onPointerDown }: Props) {
         ? `1 ${style.strokeWidth * 3}`
         : undefined;
 
-  // Décalage perpendiculaire des étiquettes de cardinalité, près de chaque extrémité.
-  const offset = (angle: number, at: { x: number; y: number }, back: number) => ({
-    x: at.x - Math.cos(angle) * back - Math.sin(angle) * 12,
-    y: at.y - Math.sin(angle) * back + Math.cos(angle) * 12,
-  });
-  const startLabelAt = offset(geo.startAngle, geo.start, 26);
-  const endLabelAt = offset(geo.endAngle, geo.end, 26);
-
   return (
     <g className="edge" data-edge={edge.id}>
       {selected && (
@@ -116,23 +108,29 @@ function EdgeViewBase({ edge, geo, selected, onPointerDown }: Props) {
         color={style.stroke}
         strokeWidth={style.strokeWidth}
       />
-      <EdgeLabel x={geo.labelAt.x} y={geo.labelAt.y} text={edge.label} size={style.fontSize} color={style.color} />
-      <EdgeLabel
-        x={startLabelAt.x}
-        y={startLabelAt.y}
-        text={edge.startLabel ?? ''}
-        size={style.fontSize - 1}
-        color={style.color}
-      />
-      <EdgeLabel
-        x={endLabelAt.x}
-        y={endLabelAt.y}
-        text={edge.endLabel ?? ''}
-        size={style.fontSize - 1}
-        color={style.color}
-      />
     </g>
   );
 }
+
+/** Étiquettes d'un lien, tracées après les formes pour ne jamais passer dessous. */
+function EdgeLabelsBase({ edge, geo }: { edge: DiagramEdge; geo: EdgeGeometry }) {
+  if (!edge.label && !edge.startLabel && !edge.endLabel) return null;
+  const { style } = edge;
+  const offset = (angle: number, at: { x: number; y: number }, back: number) => ({
+    x: at.x - Math.cos(angle) * back - Math.sin(angle) * 12,
+    y: at.y - Math.sin(angle) * back + Math.cos(angle) * 12,
+  });
+  const startAt = offset(geo.startAngle, geo.start, 26);
+  const endAt = offset(geo.endAngle, geo.end, 26);
+  return (
+    <g>
+      <EdgeLabel x={geo.labelAt.x} y={geo.labelAt.y} text={edge.label} size={style.fontSize} color={style.color} />
+      <EdgeLabel x={startAt.x} y={startAt.y} text={edge.startLabel ?? ''} size={style.fontSize - 1} color={style.color} />
+      <EdgeLabel x={endAt.x} y={endAt.y} text={edge.endLabel ?? ''} size={style.fontSize - 1} color={style.color} />
+    </g>
+  );
+}
+
+export const EdgeLabels = memo(EdgeLabelsBase);
 
 export const EdgeView = memo(EdgeViewBase);

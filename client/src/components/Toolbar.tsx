@@ -5,6 +5,7 @@ import { Icon } from './Icons';
 
 interface Props {
   onBack: () => void;
+  onImport: () => void;
   onCopyImage: () => Promise<void>;
   onExport: (format: 'png' | 'svg' | 'json') => void;
   onFit: () => void;
@@ -20,7 +21,7 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
   error: 'Échec de l’enregistrement',
 };
 
-export function Toolbar({ onBack, onCopyImage, onExport, onFit, onZoom, onSave, status }: Props) {
+export function Toolbar({ onBack, onImport, onCopyImage, onExport, onFit, onZoom, onSave, status }: Props) {
   const state = useEditor();
   const zoomPercent = Math.round(state.camera.zoom * 100);
   // Aligner demande deux formes, répartir en demande trois.
@@ -148,6 +149,15 @@ export function Toolbar({ onBack, onCopyImage, onExport, onFit, onZoom, onSave, 
         </button>
 
         <span className="divider" />
+
+        <button
+          type="button"
+          className="tool-btn"
+          title="Insérer un schéma depuis du texte PlantUML"
+          onClick={onImport}
+        >
+          <Icon name="code" size={16} />
+        </button>
 
         <button
           type="button"

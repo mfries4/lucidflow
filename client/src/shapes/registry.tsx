@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { DiagramNode, NodeStyle, Outline, Rect } from '../types';
 import { DEFAULT_NODE_STYLE } from '../types';
-import { LINE_HEIGHT, fontString, wrapText } from '../lib/text';
+import { LINE_HEIGHT, fontString, measure, wrapText } from '../lib/text';
 
 export interface ShapeProps {
   node: DiagramNode;
@@ -174,7 +174,9 @@ function UmlBody({ node, w, h, s }: ShapeProps) {
   return (
     <g>
       <rect x={0} y={0} width={w} height={h} rx={s.radius > 6 ? 6 : s.radius} {...skin(s)} />
-      <line x1={0} y1={headerH} x2={w} y2={headerH} stroke={s.stroke} strokeWidth={s.strokeWidth} />
+      {Boolean(rows.length) && (
+        <line x1={0} y1={headerH} x2={w} y2={headerH} stroke={s.stroke} strokeWidth={s.strokeWidth} />
+      )}
       {rows.slice(1).map((r) => (
         <line key={r.y} x1={0} y1={r.y} x2={w} y2={r.y} stroke={s.stroke} strokeWidth={s.strokeWidth} />
       ))}
@@ -223,6 +225,12 @@ function UmlText({ node, w, h, s }: ShapeProps) {
       ))}
     </g>
   );
+}
+
+/** Largeur de l'onglet d'un fragment : il doit contenir « alt », « loop [3 fois] »… */
+function fragmentTab(text: string, w: number, fontSize: number): number {
+  const needed = measure(text || 'alt', fontString(fontSize)) + 52;
+  return Math.round(Math.min(Math.max(needed, 60), Math.max(w - 40, 60)));
 }
 
 const umlAutoHeight = (n: DiagramNode) => {
@@ -540,8 +548,8 @@ export const shapes: Record<string, ShapeDef> = {
     container: true,
     style: { fill: 'none', stroke: '#64748b', align: 'left', valign: 'top' },
     text: 'alt',
-    Body: ({ w, h, s }) => {
-      const tw = 62;
+    Body: ({ node, w, h, s }) => {
+      const tw = fragmentTab(node.text, w, s.fontSize);
       const th = 24;
       return (
         <g>
@@ -550,7 +558,7 @@ export const shapes: Record<string, ShapeDef> = {
         </g>
       );
     },
-    textRect: () => ({ x: 8, y: 0, w: 46, h: 24 }),
+    textRect: ({ node, w, s }) => ({ x: 8, y: 0, w: fragmentTab(node.text, w, s.fontSize) - 18, h: 24 }),
   },
   actor: {
     name: 'Acteur',

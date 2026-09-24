@@ -504,3 +504,80 @@ kbd {
 }
 .copy-toast strong { color: var(--danger); font-size: 13px; }
 .copy-toast .hint { color: var(--muted); }
+
+/* ------------------------------------------------- fenêtre modale */
+
+.modal-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.modal {
+  width: min(760px, 100%);
+  max-height: min(88vh, 760px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+  padding: 18px 20px 16px;
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; }
+.modal-head h2 { font-size: 16px; }
+.modal-examples { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.modal-examples button {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 12px;
+}
+.modal-examples button:hover { border-color: var(--blue); color: var(--blue); }
+
+.plantuml-input {
+  flex: 1;
+  min-height: 260px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: var(--surface-2);
+  outline: none;
+  tab-size: 2;
+}
+.plantuml-input:focus { border-color: var(--blue); background: #fff; }
+
+.modal-report { min-height: 42px; font-size: 12.5px; }
+.modal-report p { margin: 0; }
+.ok-line { color: var(--ok); font-weight: 600; }
+.warnings { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+.modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.modal-foot .muted { font-size: 11.5px; }
+.modal-foot div { display: flex; gap: 8px; }
+.modal-foot button:not(.btn-primary) {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 9px 16px;
+}
+.modal-foot button:not(.btn-primary):hover { background: var(--surface-2); }
+
+.btn-ghost {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 9px 15px;
+  font-weight: 600;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }

@@ -24,7 +24,20 @@ function NodeViewBase({ node, selected, hidden, onPointerDown }: Props) {
       style={{ cursor: node.locked ? 'default' : 'move' }}
     >
       {node.container && (
-        <rect x={0} y={0} width={node.w} height={node.h} fill="transparent" pointerEvents="none" />
+        <>
+          {/* Le centre laisse passer les clics vers ce que le cadre contient… */}
+          <rect x={0} y={0} width={node.w} height={node.h} fill="transparent" pointerEvents="none" />
+          {/* …mais son bord offre une bande de saisie confortable. */}
+          <rect
+            x={0}
+            y={0}
+            width={node.w}
+            height={node.h}
+            fill="none"
+            stroke="transparent"
+            strokeWidth={12}
+          />
+        </>
       )}
       <g pointerEvents={pointer}>{renderShapeBody(node)}</g>
       {/* Zone invisible pour attraper les formes sans remplissage (texte, sous-branche). */}

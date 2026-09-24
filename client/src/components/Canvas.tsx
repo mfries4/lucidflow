@@ -13,7 +13,7 @@ import { anchorAtPoint, buildLookup, resolveEdge } from '../lib/edges';
 import { snapToNeighbours, type Guide } from '../lib/snapping';
 import { minHeightFor, shapeDef, umlLayout } from '../shapes/registry';
 import { NodeView } from './NodeView';
-import { EdgeView } from './EdgeView';
+import { EdgeLabels, EdgeView } from './EdgeView';
 import { TextOverlay } from './TextOverlay';
 
 const MIN_SIZE = 16;
@@ -662,6 +662,19 @@ export const Canvas = forwardRef<CanvasHandle, Props>(function Canvas({ onContex
         {showGrid && <rect data-ui="grid" x={0} y={0} width={size.w} height={size.h} fill="url(#grid-pattern)" />}
 
         <g data-world transform={`translate(${camera.x} ${camera.y}) scale(${camera.zoom})`}>
+          {/* Les cadres (paquetage, frontière, fragment) se dessinent avant les liens :
+              sinon un cadre au fond opaque masquerait les traits qu'il contient. */}
+          {nodes
+            .filter((node) => node.container)
+            .map((node) => (
+              <NodeView
+                key={node.id}
+                node={node}
+                selected={selection.includes(node.id)}
+                onPointerDown={handleNodePointerDown}
+              />
+            ))}
+
           {geometries.map(({ edge, geo }) => (
             <EdgeView
               key={edge.id}
@@ -672,15 +685,25 @@ export const Canvas = forwardRef<CanvasHandle, Props>(function Canvas({ onContex
             />
           ))}
 
-          {nodes.map((node) => (
-            <NodeView
-              key={node.id}
-              node={node}
-              selected={selection.includes(node.id)}
-              hidden={editing?.id === node.id && editing.field === 'text' && node.shape === 'textBox'}
-              onPointerDown={handleNodePointerDown}
-            />
-          ))}
+          {nodes
+            .filter((node) => !node.container)
+            .map((node) => (
+              <NodeView
+                key={node.id}
+                node={node}
+                selected={selection.includes(node.id)}
+                hidden={editing?.id === node.id && editing.field === 'text' && node.shape === 'textBox'}
+                onPointerDown={handleNodePointerDown}
+              />
+            ))}
+
+          {/* Les étiquettes passent au-dessus des formes : sur un message réflexif
+              ou un lien qui longe une forme, elles restaient sinon cachées. */}
+          <g pointerEvents="none">
+            {geometries.map(({ edge, geo }) => (
+              <EdgeLabels key={edge.id} edge={edge} geo={geo} />
+            ))}
+          </g>
 
           <g data-ui="chrome">
             {selectedNodeList.map((node) => (

@@ -4,6 +4,8 @@ import { TEMPLATES, templateFor } from '../lib/templates';
 import type { DocumentKind, DocumentSummary } from '../types';
 import { shapeDef, styleFor } from '../shapes/registry';
 import { Dropdown } from '../components/Dropdown';
+import { PlantUmlDialog } from '../components/PlantUmlDialog';
+import type { PlantUmlResult } from '../lib/plantuml';
 import { matches } from '../lib/search';
 
 interface Props {
@@ -62,6 +64,7 @@ export function Dashboard({ onOpen }: Props) {
   const [query, setQuery] = useState('');
   const [renaming, setRenaming] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [importing, setImporting] = useState(false);
   const renameRef = useRef<HTMLInputElement>(null);
 
   const refresh = () =>
@@ -104,6 +107,16 @@ export function Dashboard({ onOpen }: Props) {
     }
   };
 
+  const createFromPlantUml = async (result: PlantUmlResult) => {
+    try {
+      const doc = await api.create({ name: result.name, kind: result.kind, data: result.diagram });
+      onOpen(doc.id);
+    } catch (e) {
+      setError((e as Error).message);
+      setImporting(false);
+    }
+  };
+
   const rename = async (id: string, name: string) => {
     setRenaming(null);
     const current = documents.find((d) => d.id === id);
@@ -137,6 +150,9 @@ export function Dashboard({ onOpen }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <button type="button" className="btn-ghost" onClick={() => setImporting(true)}>
+          Depuis PlantUML
+        </button>
         <button type="button" className="btn-primary" disabled={busy} onClick={() => create('blank')}>
           + Nouveau document
         </button>
@@ -221,6 +237,15 @@ export function Dashboard({ onOpen }: Props) {
           </div>
         </section>
       </main>
+
+      {importing && (
+        <PlantUmlDialog
+          title="Créer un document depuis du texte PlantUML"
+          actionLabel="Créer le document"
+          onClose={() => setImporting(false)}
+          onImport={createFromPlantUml}
+        />
+      )}
     </div>
   );
 }
