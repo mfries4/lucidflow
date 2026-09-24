@@ -1,0 +1,13 @@
+{
+  "name": "lucidflow-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API REST + serveur statique pour LucidFlow",
+  "main": "src/index.js",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  }
+}

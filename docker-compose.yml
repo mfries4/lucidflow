@@ -1,0 +1,14 @@
+services:
+  lucidflow:
+    build: .
+    image: lucidflow:latest
+    container_name: lucidflow
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      # Les schémas sont conservés d'un redémarrage à l'autre.
+      - lucidflow-data:/data
+    restart: unless-stopped
+
+volumes:
+  lucidflow-data:

@@ -1,0 +1,19 @@
+{
+  "name": "lucidflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Éditeur web de cartes mentales et de diagrammes UML",
+  "type": "module",
+  "scripts": {
+    "setup": "npm --prefix client install",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm --prefix client run build && node scripts/copy-dist.mjs",
+    "start": "node --disable-warning=ExperimentalWarning server/src/index.js",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

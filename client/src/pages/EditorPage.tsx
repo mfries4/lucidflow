@@ -1,0 +1,319 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Canvas, type CanvasHandle } from '../components/Canvas';
+import { ShapePanel } from '../components/ShapePanel';
+import { PropertiesPanel } from '../components/PropertiesPanel';
+import { Toolbar } from '../components/Toolbar';
+import { ContextMenu } from '../components/ContextMenu';
+import { useEditor } from '../store/editor';
+import { api } from '../lib/api';
+import {
+  buildExportSvg,
+  copyPngToClipboard,
+  downloadJson,
+  downloadPng,
+  downloadSvg,
+  makeThumbnail,
+} from '../lib/export';
+import { boundsOf, rectOf } from '../lib/geometry';
+import { templateFor } from '../lib/templates';
+import type { Point } from '../types';
+
+const AUTOSAVE_DELAY = 900;
+const THUMBNAIL_INTERVAL = 20_000;
+const NUDGE_GROUPING = 600;
+
+interface Props {
+  docId: string;
+  onBack: () => void;
+}
+
+export function EditorPage({ docId, onBack }: Props) {
+  const canvasRef = useRef<CanvasHandle>(null);
+  const lastThumb = useRef(0);
+  const saveRef = useRef<(() => Promise<void>) | null>(null);
+  const lastNudge = useRef(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ at: Point; worldAt: Point } | null>(null);
+
+  const status = useEditor((s) => s.status);
+  const revision = useEditor((s) => s.revision);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    api
+      .get(docId)
+      .then((doc) => {
+        if (cancelled) return;
+        useEditor.getState().loadDocument(doc, templateFor(doc.kind).palette);
+        setLoading(false);
+        // Cadrage initial : la toile n'est mesurée qu'après quelques frames.
+        if (doc.data.nodes.length) {
+          let attempts = 0;
+          const tryFit = () => {
+            const viewport = canvasRef.current?.viewport();
+            if (viewport?.w) useEditor.getState().fitToContent(viewport);
+            else if (attempts++ < 20) requestAnimationFrame(tryFit);
+          };
+          requestAnimationFrame(tryFit);
+        }
+        // Un document encore sans vignette en reçoit une dès sa première ouverture.
+        if (!doc.preview && doc.data.nodes.length) {
+          setTimeout(() => { void saveRef.current?.(); }, 1400);
+        }
+      })
+      .catch((e: Error) => {
+        if (!cancelled) {
+          setError(e.message);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [docId]);
+
+  const exportSvgElement = useCallback((background?: string) => {
+    const element = canvasRef.current?.element;
+    if (!element) return null;
+    const { nodes } = useEditor.getState();
+    const bounds = boundsOf(nodes.map(rectOf)) ?? { x: 0, y: 0, w: 800, h: 600 };
+    return buildExportSvg(element, bounds, background);
+  }, []);
+
+  const copyImage = useCallback(async () => {
+    const svg = exportSvgElement('transparent');
+    if (!svg) throw new Error('Schéma indisponible');
+    await copyPngToClipboard(svg, 2);
+  }, [exportSvgElement]);
+
+  const save = useCallback(async () => {
+    const state = useEditor.getState();
+    if (!state.docId) return;
+    const revisionAtSave = state.revision;
+    state.setStatus('saving');
+    try {
+      const now = Date.now();
+      let preview: string | null | undefined;
+      if (now - lastThumb.current > THUMBNAIL_INTERVAL && state.nodes.length) {
+        const svg = exportSvgElement();
+        if (svg) {
+          preview = await makeThumbnail(svg);
+          lastThumb.current = now;
+        }
+      }
+      await api.update(state.docId, {
+        name: state.name,
+        data: { nodes: state.nodes, edges: state.edges },
+        ...(preview !== undefined ? { preview } : {}),
+      });
+      useEditor.getState().markSaved(revisionAtSave);
+    } catch {
+      useEditor.getState().setStatus('error');
+    }
+  }, [exportSvgElement]);
+
+  saveRef.current = save;
+
+  // Enregistrement automatique après une pause dans les modifications.
+  useEffect(() => {
+    if (loading) return;
+    const state = useEditor.getState();
+    if (state.revision === state.savedRevision) return;
+    if (state.status === 'saved') state.setStatus('idle');
+    const timer = setTimeout(save, AUTOSAVE_DELAY);
+    return () => clearTimeout(timer);
+  }, [revision, loading, save]);
+
+  // Quitter l'éditeur (retour, changement de document) enregistre ce qui est en attente :
+  // sans cela, le minuteur d'enregistrement automatique est annulé et la modification est perdue.
+  useEffect(
+    () => () => {
+      const state = useEditor.getState();
+      if (state.docId && state.revision !== state.savedRevision) {
+        void api
+          .update(state.docId, { name: state.name, data: { nodes: state.nodes, edges: state.edges } })
+          .catch(() => {});
+      }
+    },
+    [],
+  );
+
+  // Dernier enregistrement à la fermeture de l'onglet.
+  useEffect(() => {
+    const onLeave = () => {
+      const state = useEditor.getState();
+      if (state.docId && state.revision !== state.savedRevision) {
+        navigator.sendBeacon?.(
+          `/api/documents/${state.docId}`,
+          new Blob([JSON.stringify({ name: state.name, data: { nodes: state.nodes, edges: state.edges } })], {
+            type: 'application/json',
+          }),
+        );
+      }
+    };
+    window.addEventListener('pagehide', onLeave);
+    return () => window.removeEventListener('pagehide', onLeave);
+  }, []);
+
+  const handleExport = useCallback(
+    async (format: 'png' | 'svg' | 'json') => {
+      const state = useEditor.getState();
+      const filename = state.name.replace(/[^\p{L}\p{N}\-_ ]/gu, '').trim() || 'schema';
+      if (format === 'json') {
+        downloadJson({ name: state.name, kind: state.kind, data: { nodes: state.nodes, edges: state.edges } }, filename);
+        return;
+      }
+      const svg = exportSvgElement();
+      if (!svg) return;
+      if (format === 'svg') downloadSvg(svg, filename);
+      else await downloadPng(svg, filename, 2);
+    },
+    [exportSvgElement],
+  );
+
+  const fit = useCallback(() => {
+    const viewport = canvasRef.current?.viewport();
+    if (viewport?.w) useEditor.getState().fitToContent(viewport);
+  }, []);
+
+  // ------------------------------------------------------------ clavier
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing = Boolean(target?.closest('input, textarea, select'));
+      const state = useEditor.getState();
+      const mod = e.metaKey || e.ctrlKey;
+
+      // Ctrl+S reste actif pendant la saisie, sinon le navigateur ouvre sa propre boîte.
+      if (mod && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        void save();
+        return;
+      }
+      if (typing) return;
+
+      if (mod && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        e.shiftKey ? state.redo() : state.undo();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        state.redo();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        state.selectAll();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === 'c') {
+        state.copySelection();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === 'x') {
+        state.copySelection();
+        state.deleteSelection();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === 'v') {
+        state.paste();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        state.duplicateSelection();
+        return;
+      }
+      if (mod && e.key === '0') {
+        e.preventDefault();
+        fit();
+        return;
+      }
+
+      switch (e.key) {
+        case 'Delete':
+        case 'Backspace':
+          e.preventDefault();
+          state.deleteSelection();
+          break;
+        case 'Escape':
+          state.setPending(null);
+          state.setTool('select');
+          state.clearSelection();
+          break;
+        case 'Enter':
+        case 'F2':
+          if (state.selection.length === 1) {
+            e.preventDefault();
+            state.setEditing({ id: state.selection[0], field: 'text' });
+          }
+          break;
+        case 'ArrowLeft':
+        case 'ArrowRight':
+        case 'ArrowUp':
+        case 'ArrowDown': {
+          if (!state.selection.length) return;
+          e.preventDefault();
+          const step = e.shiftKey ? 10 : 1;
+          const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+          const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+          // Une rafale de flèches ne forme qu'une seule étape d'annulation.
+          const now = Date.now();
+          if (now - lastNudge.current > NUDGE_GROUPING) state.history();
+          lastNudge.current = now;
+          state.moveNodes(state.selection, dx, dy);
+          break;
+        }
+        case 'v':
+        case 'V':
+          state.setTool('select');
+          break;
+        case 'm':
+        case 'M':
+          state.setTool('pan');
+          break;
+        case 'c':
+        case 'C':
+          state.setTool('connect');
+          break;
+        default:
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [fit, save]);
+
+  if (error) {
+    return (
+      <div className="page-message">
+        <p>{error}</p>
+        <button type="button" className="btn-primary" onClick={onBack}>Retour aux documents</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="editor">
+      <Toolbar
+        onBack={onBack}
+        onCopyImage={copyImage}
+        onExport={handleExport}
+        onFit={fit}
+        onZoom={(zoom) => useEditor.getState().setZoom(zoom, canvasRef.current?.viewport())}
+        onSave={() => void save()}
+        status={status}
+      />
+      <div className="editor-body">
+        <ShapePanel />
+        <Canvas ref={canvasRef} onContextMenu={(at, worldAt) => setMenu({ at, worldAt })} />
+        <PropertiesPanel />
+      </div>
+      {menu && <ContextMenu at={menu.at} worldAt={menu.worldAt} onClose={() => setMenu(null)} />}
+      {loading && <div className="loading-veil">Chargement du schéma…</div>}
+    </div>
+  );
+}
