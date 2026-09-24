@@ -228,7 +228,10 @@ export function parseClassDiagram(lines: SourceLine[], warn: (message: string) =
     for (const node of nodes) {
       if (owned.has(node.id)) continue;
       const overlaps = node.x < right && node.x + node.w > left && node.y < low && node.y + node.h > top;
-      if (overlaps) node.x = right + 60;
+      if (!overlaps) continue;
+      const toRight = right + 60;
+      const toLeft = left - 60 - node.w;
+      node.x = Math.abs(toRight - node.x) <= Math.abs(node.x - toLeft) ? toRight : toLeft;
     }
   }
 

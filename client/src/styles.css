@@ -80,7 +80,8 @@ kbd {
 .tool-btn.ghost { font-size: 18px; }
 .zoom-value { font-variant-numeric: tabular-nums; min-width: 62px; font-size: 13px; }
 
-.brand-mark { color: var(--accent); font-size: 17px; }
+.brand-mark { display: inline-flex; align-items: center; }
+.brand svg, .brand-mark svg { display: block; }
 
 /* ----------------------------------------------------------- éditeur */
 

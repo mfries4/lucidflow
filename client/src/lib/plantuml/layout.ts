@@ -101,24 +101,71 @@ export function layeredLayout(
     }
   }
 
-  const result = new Map<string, Point>();
-  const widths = rows.map((row) =>
-    row.reduce((sum, id) => sum + byId.get(id)!.w, 0) + gapX * Math.max(row.length - 1, 0),
-  );
-  const widest = Math.max(...widths, 0);
-
-  let y = origin.y;
-  rows.forEach((row, r) => {
-    const rowHeight = Math.max(...row.map((id) => byId.get(id)!.h));
-    let x = origin.x + (widest - widths[r]) / 2;
+  // Abscisses : chaque forme se recentre sur la médiane de ses voisines de la rangée
+  // adjacente, puis les écarts minimaux sont rétablis. Quelques allers-retours
+  // suffisent à amener un parent au-dessus de ses enfants.
+  const middle = new Map<string, number>();
+  for (const row of rows) {
+    let cursor = 0;
     for (const id of row) {
       const node = byId.get(id)!;
-      // Les formes d'une rangée sont alignées par leur centre vertical.
-      result.set(id, { x: round(x), y: round(y + (rowHeight - node.h) / 2) });
-      x += node.w + gapX;
+      middle.set(id, cursor + node.w / 2);
+      cursor += node.w + gapX;
+    }
+  }
+
+  const median = (values: number[]): number | null => {
+    if (!values.length) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const half = sorted.length >> 1;
+    return sorted.length % 2 ? sorted[half] : (sorted[half - 1] + sorted[half]) / 2;
+  };
+
+  const alignRow = (row: string[], neighbours: Map<string, string[]>, refRow: string[] | undefined) => {
+    if (!row.length) return;
+    const reference = new Set(refRow ?? []);
+    const desired = row.map((id) => {
+      const linked = (neighbours.get(id) ?? []).filter((n) => reference.has(n));
+      return median(linked.map((n) => middle.get(n)!)) ?? middle.get(id)!;
+    });
+
+    const placed: number[] = [];
+    let cursor = -Infinity;
+    row.forEach((id, i) => {
+      const node = byId.get(id)!;
+      const left = Math.max(desired[i] - node.w / 2, cursor);
+      placed.push(left + node.w / 2);
+      cursor = left + node.w + gapX;
+    });
+
+    // Le décalage moyen est repris sur toute la rangée : sans cela, elle se tasse à gauche.
+    const drift = placed.reduce((sum, value, i) => sum + (desired[i] - value), 0) / row.length;
+    row.forEach((id, i) => middle.set(id, placed[i] + drift));
+  };
+
+  for (let pass = 0; pass < 4; pass += 1) {
+    if (pass % 2 === 0) {
+      for (let r = 1; r < rows.length; r += 1) alignRow(rows[r], parents, rows[r - 1]);
+    } else {
+      for (let r = rows.length - 2; r >= 0; r -= 1) alignRow(rows[r], children, rows[r + 1]);
+    }
+  }
+
+  const leftMost = Math.min(...[...middle.entries()].map(([id, c]) => c - byId.get(id)!.w / 2));
+  const result = new Map<string, Point>();
+  let y = origin.y;
+  for (const row of rows) {
+    const rowHeight = Math.max(...row.map((id) => byId.get(id)!.h));
+    for (const id of row) {
+      const node = byId.get(id)!;
+      result.set(id, {
+        x: round(origin.x + middle.get(id)! - node.w / 2 - leftMost),
+        // Les formes d'une rangée sont alignées par leur centre vertical.
+        y: round(y + (rowHeight - node.h) / 2),
+      });
     }
     y += rowHeight + gapY;
-  });
+  }
   return result;
 }
 

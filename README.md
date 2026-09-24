@@ -93,6 +93,7 @@ npm start       # http://localhost:8080
 ## Architecture
 
 ```
+lucidflow-symbole.svg   symbole de marque, source de l'icône (favicon, et plus tard l'app Electron)
 client/           interface React 18 + TypeScript, servie par Vite
   src/shapes/     registre des formes (géométrie, rendu SVG, compartiments UML) et palette
   src/lib/        géométrie, routage des liens, aimantation, mesure de texte, export, API

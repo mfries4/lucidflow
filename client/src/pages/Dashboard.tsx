@@ -5,6 +5,7 @@ import type { DocumentKind, DocumentSummary } from '../types';
 import { shapeDef, styleFor } from '../shapes/registry';
 import { Dropdown } from '../components/Dropdown';
 import { PlantUmlDialog } from '../components/PlantUmlDialog';
+import { Logo } from '../components/Logo';
 import type { PlantUmlResult } from '../lib/plantuml';
 import { matches } from '../lib/search';
 
@@ -140,7 +141,7 @@ export function Dashboard({ onOpen }: Props) {
     <div className="dashboard">
       <header className="dash-header">
         <div className="brand">
-          <span className="brand-mark" aria-hidden>◆</span>
+          <Logo size={26} />
           <span>LucidFlow</span>
         </div>
         <input

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useEditor, type SaveStatus } from '../store/editor';
 import { Dropdown } from './Dropdown';
 import { Icon } from './Icons';
+import { Logo } from './Logo';
 
 interface Props {
   onBack: () => void;
@@ -56,7 +57,7 @@ export function Toolbar({ onBack, onImport, onCopyImage, onExport, onFit, onZoom
         <button type="button" className="tool-btn ghost" onClick={onBack} title="Retour aux documents">
           <Icon name="back" size={19} />
         </button>
-        <span className="brand-mark" aria-hidden>◆</span>
+        <span className="brand-mark"><Logo size={20} /></span>
         <input
           className="doc-name"
           value={state.name}
