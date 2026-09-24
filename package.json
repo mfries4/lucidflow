@@ -2,7 +2,7 @@
   "name": "lucidflow",
   "version": "1.0.0",
   "private": true,
-  "description": "Éditeur web de cartes mentales et de diagrammes UML",
+  "description": "Éditeur de cartes mentales et de diagrammes UML",
   "type": "module",
   "scripts": {
     "setup": "npm --prefix client install",
@@ -11,9 +11,70 @@
     "start": "node --disable-warning=ExperimentalWarning server/src/index.js",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "app:dev": "npm --prefix client run build && electron .",
+    "app:build": "npm --prefix client run build && electron-builder --mac --arm64",
+    "app:build:intel": "npm --prefix client run build && electron-builder --mac --x64"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  },
+  "allowScripts": {
+    "electron@44.4.5": true
+  },
+  "main": "electron/main.js",
+  "build": {
+    "appId": "app.lucidflow.desktop",
+    "productName": "LucidFlow",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "server/src/**/*",
+      "server/package.json",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "client/dist",
+        "to": "public"
+      }
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "electronLanguages": [
+      "fr",
+      "en"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "identity": null,
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "LucidFlow",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    }
   }
 }

@@ -74,6 +74,34 @@ ils survivent aux redémarrages et aux reconstructions de l'image. Pour changer 
 | `Espace` + glisser, molette | Déplacer la vue |
 | `Ctrl/Cmd` + molette | Zoomer |
 
+## Application macOS
+
+Une coquille Electron empaquette l'interface et le serveur dans une application native :
+plus de Docker à lancer, une icône dans le Dock, les menus macOS.
+
+```bash
+npm run app:dev      # lance l'application depuis les sources
+npm run app:build    # produit release/LucidFlow-1.0.0-arm64.dmg (Apple Silicon)
+npm run app:build:intel   # variante Intel
+```
+
+Ce qu'il faut savoir :
+
+- **Le serveur tourne dans l'application**, sur un port libre choisi au démarrage et lié à
+  `127.0.0.1` uniquement : rien n'est exposé au réseau local. Aucune dépendance n'est ajoutée,
+  `node:sqlite` étant fourni par le Node d'Electron (24.21).
+- **Les schémas vivent dans `~/Library/Application Support/LucidFlow`**, indépendamment de la
+  version Docker. Pour reprendre des documents existants, copiez-y le fichier `lucidflow.db`.
+- **Les menus passent par une passerelle** (`window.lucidflowEdit`) : sur macOS un accélérateur de
+  menu intercepte la touche avant la page, donc `Cmd+Z` agit sur le schéma quand la toile a le
+  focus, et sur le texte quand un champ l'a.
+- **L'application n'est pas signée par un compte développeur Apple** (signature ad hoc). Au premier
+  lancement, faites un clic droit sur l'application puis « Ouvrir », ou bien
+  `xattr -dr com.apple.quarantine /Applications/LucidFlow.app`.
+- **Poids** : 101 Mo à télécharger, 241 Mo installés, dont 240 Mo de Chromium — notre code et
+  l'interface pèsent 364 ko à eux deux. C'est le prix d'Electron ; une coquille Tauri
+  (moteur WebKit du système) tiendrait dans une quinzaine de mégaoctets.
+
 ## Développement hors Docker
 
 Node.js 22 ou plus récent est requis (le serveur utilise le module natif `node:sqlite`).

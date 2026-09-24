@@ -198,6 +198,32 @@ export function EditorPage({ docId, onBack }: Props) {
     if (viewport?.w) useEditor.getState().fitToContent(viewport);
   }, []);
 
+  // Passerelle pour les menus de l'application de bureau : sur macOS, un
+  // accélérateur de menu intercepte la touche avant la page. Le menu appelle
+  // donc ces fonctions, qui agissent sur le schéma plutôt que sur le texte.
+  useEffect(() => {
+    const bridge = window as typeof window & {
+      lucidflowEdit?: (action: string) => void;
+      lucidflowSave?: () => Promise<void>;
+    };
+    bridge.lucidflowEdit = (action) => {
+      const state = useEditor.getState();
+      if (action === 'undo') state.undo();
+      else if (action === 'redo') state.redo();
+      else if (action === 'copy') state.copySelection();
+      else if (action === 'cut') {
+        state.copySelection();
+        state.deleteSelection();
+      } else if (action === 'paste') state.paste();
+      else if (action === 'selectAll') state.selectAll();
+    };
+    bridge.lucidflowSave = () => save();
+    return () => {
+      delete bridge.lucidflowEdit;
+      delete bridge.lucidflowSave;
+    };
+  }, [save]);
+
   // ------------------------------------------------------------ clavier
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
