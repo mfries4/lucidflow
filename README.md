@@ -95,9 +95,17 @@ Ce qu'il faut savoir :
 - **Les menus passent par une passerelle** (`window.lucidflowEdit`) : sur macOS un accélérateur de
   menu intercepte la touche avant la page, donc `Cmd+Z` agit sur le schéma quand la toile a le
   focus, et sur le texte quand un champ l'a.
-- **L'application n'est pas signée par un compte développeur Apple** (signature ad hoc). Au premier
-  lancement, faites un clic droit sur l'application puis « Ouvrir », ou bien
-  `xattr -dr com.apple.quarantine /Applications/LucidFlow.app`.
+- **L'application n'est pas notariée par Apple** — cela suppose un compte développeur payant. Elle
+  porte une signature ad hoc valide, mais macOS bloque tout de même ce qui vient du web. Après
+  l'avoir glissée dans Applications, retirez l'attribut de quarantaine :
+
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/LucidFlow.app
+  ```
+
+  Le clic droit ▸ Ouvrir ne suffit pas sur les versions récentes de macOS. La signature du bundle
+  est appliquée après empaquetage par `scripts/sign-adhoc.cjs` : sans elle, l'application était
+  déclarée « endommagée » dès qu'elle avait été téléchargée.
 - **Poids** : 101 Mo à télécharger, 241 Mo installés, dont 240 Mo de Chromium — notre code et
   l'interface pèsent 364 ko à eux deux. C'est le prix d'Electron ; une coquille Tauri
   (moteur WebKit du système) tiendrait dans une quinzaine de mégaoctets.
