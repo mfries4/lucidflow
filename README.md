@@ -1,8 +1,20 @@
-# LucidFlow
+<p align="center">
+  <img src="build/icon.png" width="112" alt="">
+</p>
 
-Application web d'édition de **cartes mentales** et de **diagrammes UML** (classes, séquence,
-cas d'utilisation, activité) et d'organigrammes. Inspirée de Lucidchart, sans aucune
-fonctionnalité d'intelligence artificielle.
+<h1 align="center">LucidFlow</h1>
+
+<p align="center">
+  Éditeur de <b>cartes mentales</b> et de <b>diagrammes UML</b> — classes, séquence,
+  cas d'utilisation, activité — et d'organigrammes.<br>
+  Application macOS native ou déploiement Docker, sans aucune fonctionnalité d'intelligence artificielle.
+</p>
+
+<p align="center">
+  <a href="https://github.com/mfries4/lucidflow/releases/latest">
+    <img alt="Dernière version" src="https://img.shields.io/github/v/release/mfries4/lucidflow?label=version&color=0B4FC4">
+  </a>
+</p>
 
 ## Démarrage avec Docker
 
