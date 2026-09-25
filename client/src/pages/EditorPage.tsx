@@ -22,6 +22,10 @@ import type { Diagram, Point } from '../types';
 const AUTOSAVE_DELAY = 900;
 const THUMBNAIL_INTERVAL = 20_000;
 const NUDGE_GROUPING = 600;
+/** Dans l'application de bureau, ces raccourcis sont portés par le menu macOS :
+ *  les traiter aussi ici les déclencherait deux fois. */
+const DESKTOP = /\bElectron\//.test(navigator.userAgent);
+const MENU_SHORTCUTS = new Set(['z', 'x', 'c', 'v', 'a', 's']);
 
 interface Props {
   docId: string;
@@ -231,6 +235,8 @@ export function EditorPage({ docId, onBack }: Props) {
       const typing = Boolean(target?.closest('input, textarea, select'));
       const state = useEditor.getState();
       const mod = e.metaKey || e.ctrlKey;
+
+      if (DESKTOP && mod && MENU_SHORTCUTS.has(e.key.toLowerCase())) return;
 
       // Ctrl+S reste actif pendant la saisie, sinon le navigateur ouvre sa propre boîte.
       if (mod && e.key.toLowerCase() === 's') {

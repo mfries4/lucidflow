@@ -394,7 +394,14 @@ kbd {
 .dash-main h2 { font-size: 15px; margin-bottom: 14px; }
 .dash-main h2 small { color: var(--muted); font-weight: 400; }
 
-.template-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 6px; }
+.template-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  /* Le défilement horizontal rogne aussi le haut : il faut de la place pour le
+     soulèvement au survol, sinon la bordure de la carte est coupée. */
+  padding: 4px 2px 8px;
+}
 .template-card {
   flex: 0 0 196px;
   display: flex;

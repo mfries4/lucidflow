@@ -148,24 +148,33 @@ function createWindow(port) {
     }
   });
 
-  // Fermeture : on laisse le temps à l'enregistrement en attente de partir.
-  let flushed = false;
+  // Fermeture : on laisse partir l'enregistrement en attente avant de céder.
+  // Le preventDefault annule aussi une demande de sortie (Cmd+Q) : il faut donc
+  // la relancer une fois l'enregistrement terminé, sinon l'application survit
+  // sans fenêtre.
+  let closable = false;
   win.on('close', (event) => {
-    if (flushed) return;
+    if (closable) return;
     event.preventDefault();
-    win.webContents
-      .executeJavaScript('window.lucidflowSave?.()')
-      .catch(() => {})
-      .finally(() => {
-        flushed = true;
-        win.close();
-      });
+    const flush = win.webContents.executeJavaScript('window.lucidflowSave?.()').catch(() => {});
+    const limite = new Promise((done) => setTimeout(done, 2000));
+    Promise.race([flush, limite]).finally(() => {
+      closable = true;
+      if (quitting) app.quit();
+      else win.close();
+    });
   });
 
   return win;
 }
 
 app.setName('LucidFlow');
+
+/** Vrai dès que l'utilisateur demande à quitter (Cmd+Q, menu, dock). */
+let quitting = false;
+app.on('before-quit', () => {
+  quitting = true;
+});
 
 app.whenReady().then(async () => {
   const port = await startServer();
