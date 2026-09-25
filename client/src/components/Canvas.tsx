@@ -81,6 +81,8 @@ interface Overlay {
 export interface CanvasHandle {
   element: SVGSVGElement | null;
   viewport: () => Rect;
+  /** Dernière position connue du pointeur sur la toile, en coordonnées du schéma. */
+  pointer: () => Point | null;
 }
 
 interface Props {
@@ -95,6 +97,9 @@ export const Canvas = forwardRef<CanvasHandle, Props>(function Canvas({ onContex
   const [overlay, setOverlay] = useState<Overlay>({});
   const [hover, setHover] = useState<string | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  // Gardée dans une référence : la suivre dans l'état redessinerait la toile à
+  // chaque mouvement de souris.
+  const pointerRef = useRef<Point | null>(null);
 
   const store = useEditor();
   const { nodes, edges, selection, camera, tool, pending, showGrid, editing } = store;
@@ -102,6 +107,7 @@ export const Canvas = forwardRef<CanvasHandle, Props>(function Canvas({ onContex
   useImperativeHandle(ref, () => ({
     element: svgRef.current,
     viewport: () => ({ x: 0, y: 0, w: size.w, h: size.h }),
+    pointer: () => pointerRef.current,
   }), [size]);
 
   useEffect(() => {
@@ -349,6 +355,14 @@ export const Canvas = forwardRef<CanvasHandle, Props>(function Canvas({ onContex
     const state = useEditor.getState();
     const world = toWorld(event);
 
+    if (state.tool === 'connect' && event.button === 0) {
+      // Tracé libre : les deux extrémités sont des points, rattachables ensuite.
+      svgRef.current?.setPointerCapture(event.pointerId);
+      interaction.current = { kind: 'connect', from: { x: world.x, y: world.y }, fromPoint: world };
+      setOverlay({ link: { a: world, b: world } });
+      return;
+    }
+
     if (event.button === 1 || spaceDown.current || state.tool === 'pan') {
       svgRef.current?.setPointerCapture(event.pointerId);
       interaction.current = { kind: 'pan', last: toScreen(event) };
@@ -372,6 +386,7 @@ export const Canvas = forwardRef<CanvasHandle, Props>(function Canvas({ onContex
   const handlePointerMove = (event: React.PointerEvent) => {
     const state = useEditor.getState();
     const current = interaction.current;
+    pointerRef.current = toWorld(event);
 
     if (current.kind === 'none') {
       const under = nodeUnder(event);
@@ -525,7 +540,18 @@ export const Canvas = forwardRef<CanvasHandle, Props>(function Canvas({ onContex
 
     if (current.kind === 'connect') {
       const under = nodeUnder(event);
-      if (under && under.id !== current.from.nodeId) {
+      const freeDraw = !current.from.nodeId;
+      if (freeDraw) {
+        // Un trait tracé sur la toile : trop court, on annule plutôt que de
+        // laisser un segment dégénéré.
+        const longueur = Math.hypot(world.x - current.fromPoint.x, world.y - current.fromPoint.y);
+        if (longueur * state.camera.zoom >= 20) {
+          const to = under ? { nodeId: under.id, ...anchorAtPoint(under, world) } : { x: world.x, y: world.y };
+          state.addEdge(current.from, to, { routing: 'straight' });
+          // Maj maintenue : l'outil reste armé pour enchaîner les traits.
+          if (!event.shiftKey) state.setTool('select');
+        }
+      } else if (under && under.id !== current.from.nodeId) {
         state.addEdge(current.from, { nodeId: under.id, ...anchorAtPoint(under, world) });
       } else if (!under) {
         // Déposer dans le vide crée une forme déjà reliée.
@@ -625,6 +651,9 @@ export const Canvas = forwardRef<CanvasHandle, Props>(function Canvas({ onContex
       className="canvas-wrap"
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
+      onPointerLeave={() => {
+        pointerRef.current = null;
+      }}
     >
       <svg
         ref={svgRef}

@@ -472,6 +472,7 @@ function DocumentSection() {
         <li><kbd>Double-clic</kbd> sur la toile : nouvelle forme</li>
         <li><kbd>Double-clic</kbd> sur une forme : éditer le texte</li>
         <li>Survolez une forme puis tirez un <b>point bleu</b> pour relier</li>
+        <li><kbd>C</kbd> puis glissez sur la toile : trait ou flèche libre</li>
         <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>Z</kbd> annuler / rétablir</li>
         <li><kbd>Ctrl</kbd>+<kbd>D</kbd> dupliquer · <kbd>Suppr</kbd> supprimer</li>
         <li><kbd>Espace</kbd> + glisser, ou molette : déplacer la vue</li>

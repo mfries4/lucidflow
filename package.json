@@ -1,6 +1,6 @@
 {
   "name": "lucidflow",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "Éditeur de cartes mentales et de diagrammes UML",
   "type": "module",

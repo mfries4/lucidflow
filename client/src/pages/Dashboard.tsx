@@ -85,9 +85,9 @@ export function Dashboard({ onOpen }: Props) {
 
   const visible = useMemo(() => {
     const needle = query.trim();
-    return needle
-      ? documents.filter((d) => matches(d.name, needle) || matches(templateFor(d.kind).name, needle))
-      : documents;
+    // Le modèle de départ n'est pas cherché : un document vierge peut devenir
+    // une carte mentale, l'origine ne dit rien de son contenu.
+    return needle ? documents.filter((d) => matches(d.name, needle)) : documents;
   }, [documents, query]);
 
   const create = async (kind: DocumentKind) => {
@@ -215,8 +215,6 @@ export function Dashboard({ onOpen }: Props) {
                     </button>
                   )}
                   <div className="doc-sub">
-                    <span>{templateFor(doc.kind).name}</span>
-                    <span>·</span>
                     <time dateTime={new Date(doc.updatedAt).toISOString()}>{formatDate(doc.updatedAt)}</time>
                   </div>
                 </div>

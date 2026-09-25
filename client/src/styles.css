@@ -486,7 +486,7 @@ kbd {
 .tool-btn svg { display: block; }
 .doc-sub { align-items: baseline; }
 .doc-sub span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.doc-sub time { white-space: nowrap; margin-left: auto; }
+.doc-sub time { white-space: nowrap; }
 
 .copy-btn { gap: 6px; font-size: 13px; }
 .copy-btn.done { color: var(--ok); }

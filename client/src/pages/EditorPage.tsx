@@ -197,6 +197,20 @@ export function EditorPage({ docId, onBack }: Props) {
     });
   }, []);
 
+  /** Le collage se fait sous la souris ; à défaut, au centre de la vue. */
+  const pasteHere = useCallback(() => {
+    const state = useEditor.getState();
+    const at = canvasRef.current?.pointer();
+    if (at) return state.paste(at);
+    const viewport = canvasRef.current?.viewport();
+    if (!viewport?.w) return state.paste();
+    const { camera } = state;
+    return state.paste({
+      x: (viewport.w / 2 - camera.x) / camera.zoom,
+      y: (viewport.h / 2 - camera.y) / camera.zoom,
+    });
+  }, []);
+
   const fit = useCallback(() => {
     const viewport = canvasRef.current?.viewport();
     if (viewport?.w) useEditor.getState().fitToContent(viewport);
@@ -218,7 +232,7 @@ export function EditorPage({ docId, onBack }: Props) {
       else if (action === 'cut') {
         state.copySelection();
         state.deleteSelection();
-      } else if (action === 'paste') state.paste();
+      } else if (action === 'paste') pasteHere();
       else if (action === 'selectAll') state.selectAll();
     };
     bridge.lucidflowSave = () => save();
@@ -226,7 +240,7 @@ export function EditorPage({ docId, onBack }: Props) {
       delete bridge.lucidflowEdit;
       delete bridge.lucidflowSave;
     };
-  }, [save]);
+  }, [save, pasteHere]);
 
   // ------------------------------------------------------------ clavier
   useEffect(() => {
@@ -271,7 +285,7 @@ export function EditorPage({ docId, onBack }: Props) {
         return;
       }
       if (mod && e.key.toLowerCase() === 'v') {
-        state.paste();
+        pasteHere();
         return;
       }
       if (mod && e.key.toLowerCase() === 'd') {
@@ -337,7 +351,7 @@ export function EditorPage({ docId, onBack }: Props) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [fit, save]);
+  }, [fit, save, pasteHere]);
 
   if (error) {
     return (
