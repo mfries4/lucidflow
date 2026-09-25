@@ -25,7 +25,10 @@ ils survivent aux redémarrages et aux reconstructions de l'image. Pour changer 
 
 **Documents**
 - Tableau de bord listant tous les schémas, avec aperçu, recherche (insensible aux accents),
-  renommage, duplication et suppression.
+  renommage et duplication.
+- **Rangement** : dossiers à un niveau, déplacement par glisser-déposer ou par le menu de la carte,
+  documents épinglés en tête de liste, et corbeille — une suppression reste récupérable jusqu'à ce
+  qu'on la vide. Supprimer un dossier ne supprime pas son contenu : les documents reviennent à la racine.
 - Six modèles de départ : carte mentale, organigramme, UML classes / séquence / cas d'utilisation / activité, plus le document vierge.
 - **Import PlantUML** : collez un texte et l'application en tire un schéma modifiable —
   diagrammes de classes, de séquence, de cas d'utilisation et cartes mentales. Depuis le tableau
@@ -158,12 +161,16 @@ Choix techniques :
 
 | Méthode | Route | Rôle |
 |---|---|---|
-| `GET` | `/api/documents` | Liste (sans le contenu des schémas) |
+| `GET` | `/api/documents` | Liste (sans le contenu des schémas) ; `?trash=1` pour la corbeille |
 | `POST` | `/api/documents` | Création `{ name, kind, data }` |
 | `GET` | `/api/documents/:id` | Document complet |
 | `PATCH` | `/api/documents/:id` | Mise à jour partielle `{ name?, data?, preview? }` |
 | `POST` | `/api/documents/:id/duplicate` | Duplication |
-| `DELETE` | `/api/documents/:id` | Suppression |
+| `DELETE` | `/api/documents/:id` | Mise à la corbeille ; `?purge=1` pour supprimer définitivement |
+| `POST` | `/api/documents/:id/restore` | Restauration depuis la corbeille |
+| `DELETE` | `/api/trash` | Vider la corbeille |
+| `GET` `POST` | `/api/folders` | Liste et création de dossiers |
+| `PATCH` `DELETE` | `/api/folders/:id` | Renommage et suppression |
 | `GET` | `/api/health` | État du service |
 
 Un schéma est un objet JSON `{ nodes: [...], edges: [...] }` : les fichiers exportés en JSON peuvent

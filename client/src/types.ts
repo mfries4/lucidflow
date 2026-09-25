@@ -110,8 +110,21 @@ export interface DocumentSummary {
   name: string;
   kind: DocumentKind;
   preview: string | null;
+  /** Dossier de rangement ; null à la racine. */
+  folderId: string | null;
+  pinned: boolean;
+  /** Renseigné quand le document est à la corbeille. */
+  deletedAt: number | null;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  /** Nombre de documents rangés dedans, corbeille exclue. */
+  count: number;
+  createdAt: number;
 }
 
 export interface DocumentFull extends DocumentSummary {

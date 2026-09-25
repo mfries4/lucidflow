@@ -4,10 +4,17 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import {
   createDocument,
+  createFolder,
   deleteDocument,
+  deleteFolder,
   duplicateDocument,
+  emptyTrash,
   getDocument,
   listDocuments,
+  listFolders,
+  renameFolder,
+  restoreDocument,
+  trashDocument,
   updateDocument,
 } from './db.js';
 import { createStaticHandler } from './static.js';
@@ -55,15 +62,42 @@ function readBody(req) {
   });
 }
 
-async function handleApi(req, res, pathname) {
-  const segments = pathname.split('/').filter(Boolean); // ['api', 'documents', id?, action?]
+async function handleApi(req, res, url) {
+  const segments = url.pathname.split('/').filter(Boolean); // ['api', 'documents', id?, action?]
   const [, resource, id, action] = segments;
 
   if (resource === 'health') return json(res, 200, { status: 'ok', uptime: process.uptime() });
+
+  if (resource === 'folders') {
+    if (!id) {
+      if (req.method === 'GET') return json(res, 200, listFolders());
+      if (req.method === 'POST') {
+        const body = await readBody(req);
+        return json(res, 201, createFolder({ id: randomUUID(), name: body.name }));
+      }
+      return json(res, 405, { error: 'Méthode non autorisée' });
+    }
+    if (req.method === 'PATCH' || req.method === 'PUT' || req.method === 'POST') {
+      const folder = renameFolder(id, (await readBody(req)).name);
+      return folder ? json(res, 200, folder) : json(res, 404, { error: 'Dossier introuvable' });
+    }
+    if (req.method === 'DELETE') {
+      // Le contenu n'est pas supprimé : il retourne à la racine.
+      return deleteFolder(id) ? json(res, 200, { ok: true }) : json(res, 404, { error: 'Dossier introuvable' });
+    }
+    return json(res, 405, { error: 'Méthode non autorisée' });
+  }
+
+  if (resource === 'trash' && req.method === 'DELETE') {
+    return json(res, 200, { removed: emptyTrash() });
+  }
+
   if (resource !== 'documents') return json(res, 404, { error: 'Ressource inconnue' });
 
   if (!id) {
-    if (req.method === 'GET') return json(res, 200, listDocuments());
+    if (req.method === 'GET') {
+      return json(res, 200, listDocuments({ trash: url.searchParams.get('trash') === '1' }));
+    }
     if (req.method === 'POST') {
       const body = await readBody(req);
       const doc = createDocument({
@@ -82,6 +116,10 @@ async function handleApi(req, res, pathname) {
     const copy = duplicateDocument(id, randomUUID());
     return copy ? json(res, 201, copy) : json(res, 404, { error: 'Document introuvable' });
   }
+  if (action === 'restore' && req.method === 'POST') {
+    const doc = restoreDocument(id);
+    return doc ? json(res, 200, doc) : json(res, 404, { error: 'Document introuvable' });
+  }
   if (action) return json(res, 404, { error: 'Action inconnue' });
 
   if (req.method === 'GET') {
@@ -95,9 +133,10 @@ async function handleApi(req, res, pathname) {
     return doc ? json(res, 200, doc) : json(res, 404, { error: 'Document introuvable' });
   }
   if (req.method === 'DELETE') {
-    return deleteDocument(id)
-      ? json(res, 200, { ok: true })
-      : json(res, 404, { error: 'Document introuvable' });
+    // Sans `purge`, le document part à la corbeille et reste récupérable.
+    const definitif = url.searchParams.get('purge') === '1';
+    const ok = definitif ? deleteDocument(id) : trashDocument(id);
+    return ok ? json(res, 200, { ok: true }) : json(res, 404, { error: 'Document introuvable' });
   }
   return json(res, 405, { error: 'Méthode non autorisée' });
 }
@@ -116,7 +155,7 @@ const server = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-    if (pathname.startsWith('/api/')) return await handleApi(req, res, pathname);
+    if (pathname.startsWith('/api/')) return await handleApi(req, res, new URL(req.url, 'http://localhost'));
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       return json(res, 405, { error: 'Méthode non autorisée' });
     }
