@@ -1,6 +1,6 @@
 {
   "name": "lucidflow",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Éditeur de cartes mentales et de diagrammes UML",
   "type": "module",
@@ -76,6 +76,7 @@
       "title": "LucidFlow",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
-    "afterPack": "./scripts/sign-adhoc.cjs"
+    "afterPack": "./scripts/sign-adhoc.cjs",
+    "beforePack": "./scripts/build-client.cjs"
   }
 }
