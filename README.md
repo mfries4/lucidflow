@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="build/icon.png" width="112" alt="">
+  <img src="assets/icon.png" width="112" alt="">
 </p>
 
 <h1 align="center">LucidFlow</h1>
@@ -144,7 +144,7 @@ npm start       # http://localhost:8080
 ## Architecture
 
 ```
-lucidflow-symbole.svg   symbole de marque, source de l'icône (favicon, et plus tard l'app Electron)
+assets/           ressources de marque : symbole d'origine, icône de l'application, avatar
 client/           interface React 18 + TypeScript, servie par Vite
   src/shapes/     registre des formes (géométrie, rendu SVG, compartiments UML) et palette
   src/lib/        géométrie, routage des liens, aimantation, mesure de texte, export, API

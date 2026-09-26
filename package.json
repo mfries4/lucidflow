@@ -32,7 +32,7 @@
     "productName": "LucidFlow",
     "directories": {
       "output": "release",
-      "buildResources": "build"
+      "buildResources": "assets"
     },
     "files": [
       "electron/**/*",
@@ -54,7 +54,7 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "icon": "build/icon.icns",
+      "icon": "assets/icon.icns",
       "target": [
         {
           "target": "dmg",
