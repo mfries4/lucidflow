@@ -336,6 +336,7 @@ kbd {
   display: flex;
   flex-direction: column;
 }
+.dropdown-menu { max-height: min(70vh, 460px); overflow-y: auto; }
 .dropdown-menu.left { left: 0; }
 .dropdown-menu.right { right: 0; }
 .dropdown-menu button, .context-menu button {
@@ -426,7 +427,6 @@ kbd {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
   box-shadow: var(--shadow-sm);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -442,6 +442,9 @@ kbd {
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
   padding: 0;
+  /* L'aperçu arrondit ses propres coins : la carte ne peut plus rogner, sinon
+     elle couperait le menu déroulant qui en dépasse. */
+  border-radius: var(--radius) var(--radius) 0 0;
   overflow: hidden;
 }
 .doc-preview img { width: 100%; height: 100%; object-fit: contain; }
@@ -632,7 +635,6 @@ kbd {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .folder-card:hover { border-color: var(--border-strong); }
