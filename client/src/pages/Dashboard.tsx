@@ -330,25 +330,31 @@ export function Dashboard({ onOpen }: Props) {
                   className={`folder-card ${dropTarget === dossier.id ? 'over' : ''}`}
                   {...dropProps(dossier.id, dossier.id)}
                 >
-                  <button type="button" className="folder-open" onClick={() => setCurrent(dossier.id)}>
-                    <Icon name="folder" size={30} />
-                    {renamingFolder === dossier.id ? (
+                  {renamingFolder === dossier.id ? (
+                    /* Le champ remplace le bouton au lieu d'y être imbriqué : à
+                       l'intérieur, la barre d'espace actionnerait le bouton —
+                       elle ouvrait le dossier au lieu de s'écrire dans le nom. */
+                    <div className="folder-open">
+                      <Icon name="folder" size={30} />
                       <input
                         ref={renameRef}
                         className="rename-input"
                         defaultValue={dossier.name}
-                        onClick={(e) => e.stopPropagation()}
                         onBlur={(e) => void renameFolder(dossier.id, e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                           if (e.key === 'Escape') setRenamingFolder(null);
                         }}
                       />
-                    ) : (
+                      <span>{dossier.count} document{dossier.count > 1 ? 's' : ''}</span>
+                    </div>
+                  ) : (
+                    <button type="button" className="folder-open" onClick={() => setCurrent(dossier.id)}>
+                      <Icon name="folder" size={30} />
                       <strong>{dossier.name}</strong>
-                    )}
-                    <span>{dossier.count} document{dossier.count > 1 ? 's' : ''}</span>
-                  </button>
+                      <span>{dossier.count} document{dossier.count > 1 ? 's' : ''}</span>
+                    </button>
+                  )}
                   <Dropdown label="⋯" align="right" title="Actions">
                     {(close) => (
                       <>
