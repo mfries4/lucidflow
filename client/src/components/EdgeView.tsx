@@ -116,12 +116,28 @@ function EdgeViewBase({ edge, geo, selected, onPointerDown }: Props) {
 function EdgeLabelsBase({ edge, geo }: { edge: DiagramEdge; geo: EdgeGeometry }) {
   if (!edge.label && !edge.startLabel && !edge.endLabel) return null;
   const { style } = edge;
-  const offset = (angle: number, at: { x: number; y: number }, back: number) => ({
-    x: at.x - Math.cos(angle) * back - Math.sin(angle) * 12,
-    y: at.y - Math.sin(angle) * back + Math.cos(angle) * 12,
-  });
-  const startAt = offset(geo.startAngle, geo.start, 26);
-  const endAt = offset(geo.endAngle, geo.end, 26);
+
+  /**
+   * Une cardinalité se pose près de son extrémité : un peu en retrait le long du
+   * lien, et sur le côté du trait. Les deux écarts tiennent compte de la taille
+   * de l'étiquette — à valeur fixe, une étiquette large chevauchait le trait ou
+   * mordait sur la forme.
+   */
+  const placer = (angle: number, at: { x: number; y: number }, texte: string) => {
+    const taille = style.fontSize - 1;
+    const lignes = texte.split('\n');
+    const largeur = Math.max(...lignes.map((l) => measure(l, fontString(taille)))) + 10;
+    const hauteur = lignes.length * taille * 1.3 + 4;
+    // L'angle pointe vers l'intérieur de la forme : on s'en éloigne.
+    const dx = -Math.cos(angle);
+    const dy = -Math.sin(angle);
+    const recul = 12 + (Math.abs(dx) * largeur + Math.abs(dy) * hauteur) / 2;
+    const cote = 6 + (Math.abs(dy) * largeur + Math.abs(dx) * hauteur) / 2;
+    return { x: at.x + dx * recul - dy * cote, y: at.y + dy * recul + dx * cote };
+  };
+
+  const startAt = placer(geo.startAngle, geo.start, edge.startLabel ?? '');
+  const endAt = placer(geo.endAngle, geo.end, edge.endLabel ?? '');
   return (
     <g>
       <EdgeLabel x={geo.labelAt.x} y={geo.labelAt.y} text={edge.label} size={style.fontSize} color={style.color} />

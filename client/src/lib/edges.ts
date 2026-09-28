@@ -97,8 +97,11 @@ export function resolveEdge(
       },
       start: a.point,
       end: b.point,
-      startAngle: Math.atan2(sideVector[a.side].y, sideVector[a.side].x),
-      endAngle: Math.atan2(sideVector[b.side].y, sideVector[b.side].x),
+      // Comme pour les autres tracés, l'angle pointe vers l'intérieur de la forme :
+      // c'est la normale rentrante. Avec la normale sortante, les pointes se
+      // dessinaient dans la forme et les cardinalités atterrissaient dedans.
+      startAngle: Math.atan2(-sideVector[a.side].y, -sideVector[a.side].x),
+      endAngle: Math.atan2(-sideVector[b.side].y, -sideVector[b.side].x),
     };
   }
 
